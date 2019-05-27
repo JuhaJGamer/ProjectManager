@@ -1,7 +1,7 @@
 # ProjectManager (GUI)
 
 Original project by [this guy](https://github.com/Tantares).
-Automatically manages projects.
+Automatically manages project-based flight naming.
 
 ### NB: BUILDING
 If you are going to build this, please see [BUILDING](BUILDING.md).
