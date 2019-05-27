@@ -1,22 +1,22 @@
-#ProjectManager (GUI)
+# ProjectManager (GUI)
 
 Original project by [this guy](https://github.com/Tantares).
 Automatically manages projects.
 
-###NB: BUILDING
+### NB: BUILDING
 If you are going to build this, please see [BUILDING](BUILDING.md).
 
-##TODO:
+## TODO:
 
 - [x] Editor launch button event
 - [ ] SC launch button event
-- [×] Basic selection GUI
+- [Ã—] Basic selection GUI
 - [ ] Vessel selection GUI
 - [ ] The actual naming
 - [ ] Project database management with save nodes
 - [ ] Fine tuning
 
-##Examples
+## Examples
 E X A M P L E   1
 
 [STS] Discovery
