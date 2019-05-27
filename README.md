@@ -10,7 +10,7 @@ If you are going to build this, please see [BUILDING](BUILDING.md).
 
 - [x] Editor launch button event
 - [ ] SC launch button event
-- [×] Basic selection GUI
+- [x] Basic selection GUI
 - [ ] Vessel selection GUI
 - [ ] The actual naming
 - [ ] Project database management with save nodes
