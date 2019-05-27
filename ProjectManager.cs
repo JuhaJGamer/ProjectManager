@@ -3,35 +3,91 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using UnityEngine;
+using static UnityEngine.UI.Button;
 
 namespace ProjectManager
 {
-    [KSPScenario(ScenarioCreationOptions.AddToAllGames, GameScenes.FLIGHT)]
+    [KSPScenario(ScenarioCreationOptions.AddToAllGames, new GameScenes[] { GameScenes.FLIGHT, GameScenes.EDITOR, GameScenes.SPACECENTER })]
     public class ProjectManager : ScenarioModule
     {
-        // Constants.
-
+        //Constants.
         private const string NODE_NAME_PROJECT_MANAGER = "PROJECTMANAGER";
         private const string VALUE_NAME_LAUNCH_NUMBER = "LAUNCH_NUMBER";
         private const string LOG_PREFIX = "Project Manager";
         private const string ROMAN_NUMERAL_FLAG = @"]*";
         private const string REGEX_PROJECT_FORMAT = @"\[([^]]*)\]";
 
-        // Fields.
+        //Enums
+        public enum NamingMode { NEW, MULTIL, MULTILS, ABORT, ABORTSAME };
 
+
+        //Fields.
         private ConfigNode project_manager_node;
+        private PopupDialog editorPopup;
+        private static NamingMode mode;
 
         public void Start()
         {
-            // Subscribe to the launch event.
+            //Subscribe to the launch event.
             GameEvents.OnVesselRollout.Add(ApplyLaunchNumber);
+            Debug.LogFormat("[{0}] Loading up listeners", LOG_PREFIX);
+            //Unsubscribe everything from the editor button click event. Subscribe yourself.
+            if (HighLogic.LoadedSceneIsEditor)
+            {
+                Debug.LogFormat("[{0}] Removing editor launch listeners", LOG_PREFIX);
+                EditorLogic.fetch.launchBtn.onClick.RemoveAllListeners();
+                EditorLogic.fetch.launchBtn.onClick.AddListener(ShowDialog);
+            }
+        }
+
+        private void LauncherDialog()
+        {
+            if (HighLogic.LoadedSceneIsEditor || HighLogic.LoadedScene == GameScenes.SPACECENTER)
+            {
+                Debug.LogFormat("[{0}] Launching...?", LOG_PREFIX);
+                EditorLogic.fetch.launchVessel();
+            }
+        }
+
+        private void ShowDialog()
+        {
+            if (GetProjectNameFromVesselName(EditorLogic.fetch.shipNameField.text) == null) return; //If this isn't a project
+            Debug.LogFormat("[{0}] Showing dialog", LOG_PREFIX);
+            editorPopup = PopupDialog.SpawnPopupDialog(new MultiOptionDialog(
+                "popup1",
+                "Project naming: ",
+                "Project Manager",
+                HighLogic.UISkin,
+                new DialogGUIVerticalLayout(
+                    new DialogGUILabel("Launch?"),
+                    new DialogGUIToggleGroup(
+                        new DialogGUIToggle(true, "New launch", (bool x) => { mode = NamingMode.NEW; }),
+                        new DialogGUIToggle(false, "Multi-part launch", (bool x) => { mode = NamingMode.MULTIL; }),
+                        new DialogGUIToggle(false, "Multi-part launch (Other than previously launched project vessel)", (bool x) => { mode = NamingMode.MULTILS; ShowVesselDialog(); }),
+                        new DialogGUIToggle(false, "Previsouly aborted launch", (bool x) => { mode = NamingMode.ABORT; }),
+                        new DialogGUIToggle(false, "Previously aborted, reuse name", (bool x) => { mode = NamingMode.ABORTSAME; })
+                    ),
+                    new DialogGUIHorizontalLayout(
+                        new DialogGUIButton("Abort", () => { editorPopup.Dismiss(); }),
+                        new DialogGUIFlexibleSpace(),                      
+                        new DialogGUIButton("Launch", () => { editorPopup.Dismiss(); LauncherDialog(); })
+                    )
+                )
+            ), false, HighLogic.UISkin);
+        }
+
+        private void ShowVesselDialog()
+        {
+            throw new NotImplementedException();
         }
 
         public void OnDisable()
         {
-            // Clean up, un-subscribe from launch event.
+            //Clean up, un-subscribe from launch event.
             GameEvents.OnVesselRollout.Remove(ApplyLaunchNumber);
+            //GameEvents.onGameSceneSwitchRequested.Remove(ShowGUI);
         }
 
         public override void OnSave(ConfigNode node)
@@ -40,7 +96,7 @@ namespace ProjectManager
 
             // Remove the old project node.
             node.RemoveNode(NODE_NAME_PROJECT_MANAGER);
-            
+
             // Write the new project node.
             node.AddNode(project_manager_node);
         }
@@ -68,7 +124,7 @@ namespace ProjectManager
             if (vessel is null)
                 return;
 
-            Debug.LogFormat("[{0}] Starting up.",LOG_PREFIX);
+            Debug.LogFormat("[{0}] Starting up.", LOG_PREFIX);
 
             // Get the project name from the vessel name.
 
@@ -90,7 +146,7 @@ namespace ProjectManager
             if (previous_launch_number != null)
                 launch_number = previous_launch_number.Value + 1;
 
-            Debug.LogFormat("[{0}] Launch number is {1}.", LOG_PREFIX,launch_number);
+            Debug.LogFormat("[{0}] Launch number is {1}.", LOG_PREFIX, launch_number);
 
             // Rename the vessel.
 
@@ -122,8 +178,8 @@ namespace ProjectManager
                 return null;
 
             return match.Value
-                .Replace("[",string.Empty)
-                .Replace("]",string.Empty);
+                .Replace("[", string.Empty)
+                .Replace("]", string.Empty);
         }
 
         private int? GetPreviousLaunchNumber(string project_name)
@@ -144,7 +200,7 @@ namespace ProjectManager
 
                 return launch_number;
             }
-            catch(InvalidCastException e)
+            catch (InvalidCastException e)
             {
                 return null;
             }
